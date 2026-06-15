@@ -166,6 +166,8 @@ main() {
         cat > "$CONFIG_FILE" << EOF
 # OKE Configuration
 # https://github.com/openkubes/oke
+runtime-image: rancher/rke2-runtime:v1.35.5-rke2r2
+data-dir: /var/lib/rancher/rke2
 EOF
         if [ "$ROLE" = "agent" ]; then
             [ -n "${OKE_URL:-}" ] && echo "server: ${OKE_URL}" >> "$CONFIG_FILE"
@@ -215,11 +217,75 @@ ExecStart=${INSTALL_OKE_BIN_DIR}/oke ${ROLE} \
 WantedBy=multi-user.target
 EOF
 
+    # Fix systemd service type for stability
+    sed -i 's/Type=notify/Type=simple/' "${INSTALL_OKE_SYSTEMD_DIR}/${UNIT_NAME}.service" 2>/dev/null || true
+
     # Enable & start
     info "Enabling and starting ${UNIT_NAME}.service ..."
     systemctl daemon-reload
     systemctl enable "${UNIT_NAME}.service"
     systemctl start "${UNIT_NAME}.service"
+
+    # Wait for OKE to generate its runtime files
+    info "Waiting for OKE to initialize (30s)..."
+    sleep 30
+
+    # Patch image tags — binary currently embeds :latest for some images
+    # This will be fixed in a future OKE release
+    if [ "$ROLE" = "server" ]; then
+        info "Patching image tags..."
+
+        IMAGES_DIR="${DATA_DIR:-/var/lib/rancher/rke2}/agent/images"
+        MANIFESTS_DIR="${DATA_DIR:-/var/lib/rancher/rke2}/agent/pod-manifests"
+        CONTAINERD_CONFIG="${DATA_DIR:-/var/lib/rancher/rke2}/agent/etc/containerd/config.toml"
+
+        K8S_TAG="v1.35.5-rke2r2-build20260521"
+        ETCD_TAG="v3.6.7-k3s1-build20260512"
+        PAUSE_TAG="3.6"
+        CCM_TAG="v1.35.4-0.20260415195656-e51c0636351d-build20260415"
+        RUNTIME_TAG="v1.35.5-rke2r2"
+
+        # Patch image.txt files
+        for f in \
+            "${IMAGES_DIR}/kube-apiserver-image.txt" \
+            "${IMAGES_DIR}/kube-controller-manager-image.txt" \
+            "${IMAGES_DIR}/kube-scheduler-image.txt" \
+            "${IMAGES_DIR}/kube-proxy-image.txt"; do
+            [ -f "$f" ] && sed -i "s|rancher/hardened-kubernetes:latest|rancher/hardened-kubernetes:${K8S_TAG}|g" "$f"
+        done
+
+        [ -f "${IMAGES_DIR}/etcd-image.txt" ] && \
+            sed -i "s|rancher/hardened-etcd:latest|rancher/hardened-etcd:${ETCD_TAG}|g" \
+            "${IMAGES_DIR}/etcd-image.txt"
+
+        [ -f "${IMAGES_DIR}/cloud-controller-manager-image.txt" ] && \
+            sed -i "s|rancher/rke2-cloud-provider:latest|rancher/rke2-cloud-provider:${CCM_TAG}|g" \
+            "${IMAGES_DIR}/cloud-controller-manager-image.txt"
+
+        [ -f "${IMAGES_DIR}/runtime-image.txt" ] && \
+            sed -i "s|rancher/rke2-runtime:latest|rancher/rke2-runtime:${RUNTIME_TAG}|g" \
+            "${IMAGES_DIR}/runtime-image.txt"
+
+        # Patch containerd config (pause image)
+        [ -f "${CONTAINERD_CONFIG}" ] && \
+            sed -i "s|rancher/mirrored-pause:latest|rancher/mirrored-pause:${PAUSE_TAG}|g" \
+            "${CONTAINERD_CONFIG}"
+
+        # Patch pod manifests
+        for f in "${MANIFESTS_DIR}"/*.yaml; do
+            [ -f "$f" ] || continue
+            sed -i \
+                -e "s|rancher/hardened-kubernetes:latest|rancher/hardened-kubernetes:${K8S_TAG}|g" \
+                -e "s|rancher/hardened-etcd:latest|rancher/hardened-etcd:${ETCD_TAG}|g" \
+                "$f"
+        done
+
+        info "  → Image tags patched"
+
+        # Restart to apply patches
+        info "Restarting OKE server to apply patches..."
+        systemctl restart "${UNIT_NAME}.service"
+    fi
 
     # Done
     echo ""
