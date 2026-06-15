@@ -168,6 +168,7 @@ main() {
 # https://github.com/openkubes/oke
 runtime-image: rancher/rke2-runtime:v1.35.5-rke2r2
 data-dir: /var/lib/rancher/rke2
+pause-image: rancher/mirrored-pause:3.6
 EOF
         if [ "$ROLE" = "agent" ]; then
             [ -n "${OKE_URL:-}" ] && echo "server: ${OKE_URL}" >> "$CONFIG_FILE"
@@ -265,20 +266,6 @@ EOF
         [ -f "${IMAGES_DIR}/runtime-image.txt" ] && \
             sed -i "s|rancher/rke2-runtime:latest|rancher/rke2-runtime:${RUNTIME_TAG}|g" \
             "${IMAGES_DIR}/runtime-image.txt"
-
-        # Patch containerd config (pause image) — wait for file to be generated
-        info "Waiting for containerd config to be generated..."
-        CONTAINERD_WAIT=0
-        while [ $CONTAINERD_WAIT -lt 60 ]; do
-            if [ -f "${CONTAINERD_CONFIG}" ]; then
-                sed -i "s|rancher/mirrored-pause:latest|rancher/mirrored-pause:${PAUSE_TAG}|g" \
-                    "${CONTAINERD_CONFIG}"
-                info "  → containerd config patched"
-                break
-            fi
-            sleep 2
-            CONTAINERD_WAIT=$((CONTAINERD_WAIT + 2))
-        done
 
         # Patch pod manifests — wait for files to be generated
         info "Waiting for pod manifests to be generated..."
