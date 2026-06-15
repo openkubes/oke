@@ -58,9 +58,18 @@ jobs:
           BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           mkdir -p dist
 
-          go build \
-            -tags "exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" \
+          # Fetch the exact Go version Kubernetes requires
+          KUBERNETES_VERSION="v1.35.5"
+          VERSION_GOLANG="go$(curl -sL https://raw.githubusercontent.com/kubernetes/kubernetes/${KUBERNETES_VERSION}/.go-version | tr -d '[:space:]')"
+
+          GOEXPERIMENT=boringcrypto go build \
+            -tags "selinux netgo osusergo no_stage static_build sqlite_omit_load_extension exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" \
             -ldflags "-s -w \
+              -extldflags \"-static\" \
+              -X github.com/k3s-io/k3s/pkg/version.Program=oke \
+              -X github.com/k3s-io/k3s/pkg/version.Version=${VERSION} \
+              -X github.com/k3s-io/k3s/pkg/version.GitCommit=${COMMIT} \
+              -X github.com/k3s-io/k3s/pkg/version.UpstreamGolang=${VERSION_GOLANG} \
               -X github.com/openkubes/oke/pkg/version.Version=${VERSION} \
               -X github.com/openkubes/oke/pkg/version.GitCommit=${COMMIT} \
               -X github.com/openkubes/oke/pkg/version.BuildDate=${BUILD_DATE}" \
