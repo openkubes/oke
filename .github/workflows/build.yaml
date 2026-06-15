@@ -1,0 +1,209 @@
+name: OKE Build & Release
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: openkubes/oke
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Build OKE binary — amd64 + arm64 (native runners, kein QEMU)
+  # -------------------------------------------------------------------------
+  build:
+    name: Build (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-22.04
+            goarch: amd64
+          - arch: arm64
+            runner: ubuntu-22.04-arm
+            goarch: arm64
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build OKE binary
+        env:
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          VERSION=${GITHUB_REF_NAME:-dev}
+          COMMIT=$(git rev-parse --short HEAD)
+          BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          go build \
+            -ldflags "-s -w \
+              -X github.com/openkubes/oke/pkg/version.Version=${VERSION} \
+              -X github.com/openkubes/oke/pkg/version.GitCommit=${COMMIT} \
+              -X github.com/openkubes/oke/pkg/version.BuildDate=${BUILD_DATE}" \
+            -o dist/oke-linux-${{ matrix.goarch }} \
+            ./
+
+      - name: Smoke test — binary runs
+        if: matrix.arch == 'amd64'
+        run: |
+          chmod +x dist/oke-linux-amd64
+          ./dist/oke-linux-amd64 --version || ./dist/oke-linux-amd64 --help
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: oke-linux-${{ matrix.arch }}
+          path: dist/oke-linux-${{ matrix.goarch }}
+          retention-days: 7
+
+  # -------------------------------------------------------------------------
+  # Release — nur bei Tags (v*)
+  # -------------------------------------------------------------------------
+  release:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Flatten dist/
+        run: |
+          find dist/ -name "oke-linux-*" -exec mv {} dist/ \;
+          chmod +x dist/oke-linux-*
+          ls -lh dist/
+
+      - name: Generate checksums
+        run: |
+          cd dist
+          sha256sum oke-linux-* > sha256sums.txt
+          cat sha256sums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "OKE ${{ github.ref_name }}"
+          body: |
+            ## OKE ${{ github.ref_name }}
+
+            OpenKubes Kubernetes Engine — RKE2 fork running on any Linux.
+            ok-linux is the native, optimized platform.
+
+            ### Install
+
+            ```bash
+            # Any Linux (Ubuntu/Debian)
+            curl -sfL https://get.openkubes.io | sh -s - server
+
+            # With ok-linux auto-detection
+            curl -sfL https://get.openkubes.io | OKE_NATIVE=auto sh -s - server
+            ```
+
+            ### Downloads
+
+            | Binary | Architecture |
+            |---|---|
+            | `oke-linux-amd64` | x86_64 |
+            | `oke-linux-arm64` | ARM64 |
+
+            ### Verify
+
+            ```bash
+            sha256sum -c sha256sums.txt
+            ```
+
+            ### Base
+            Fork of [rancher/rke2](https://github.com/rancher/rke2) v1.35.5+rke2r2
+          files: |
+            dist/oke-linux-amd64
+            dist/oke-linux-arm64
+            dist/sha256sums.txt
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') }}
+
+  # -------------------------------------------------------------------------
+  # Container Image — GHCR (nur bei Tags und main-Push)
+  # -------------------------------------------------------------------------
+  container:
+    name: Container Image
+    needs: build
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'push'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download amd64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: oke-linux-amd64
+          path: dist/
+
+      - name: Download arm64 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: oke-linux-arm64
+          path: dist/
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
+
+      - name: Build and push multi-arch image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
