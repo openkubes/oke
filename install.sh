@@ -62,12 +62,12 @@ detect_ok_linux() {
     return 1
 }
 
-# Get latest OKE version from GitHub
+# Get latest OKE version from GitHub API
 get_latest_version() {
     if command -v curl > /dev/null 2>&1; then
-        curl -sfL "${GITHUB_URL}/latest" | grep -o 'tag/[^"]*' | head -1 | cut -d/ -f2
+        curl -sfL "https://api.github.com/repos/openkubes/oke/releases/latest" | grep '"tag_name"' | cut -d'"' -f4
     elif command -v wget > /dev/null 2>&1; then
-        wget -qO- "${GITHUB_URL}/latest" | grep -o 'tag/[^"]*' | head -1 | cut -d/ -f2
+        wget -qO- "https://api.github.com/repos/openkubes/oke/releases/latest" | grep '"tag_name"' | cut -d'"' -f4
     else
         fatal "curl or wget required"
     fi
