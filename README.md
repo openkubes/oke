@@ -1,7 +1,7 @@
 # OKE — OpenKubes Kubernetes Engine
 
 <p align="center">
-  <img src="docs/assets/oke-logo.png" alt="OKE Logo" width="200" />
+  <img src="./openkubes-icon-large.png" alt="OKE Logo" width="200" />
 </p>
 
 <p align="center">
@@ -25,13 +25,13 @@ It is its own product — not "RKE2 with extras". Like K3s never says "we are a 
 
 ```bash
 # Any Linux (Ubuntu, Debian, RHEL, ...)
-curl -sfL https://get.openkubes.io | sh -s - server
+curl -sfL https://get.openkubes.ai | sh -s - server
 
 # With ok-linux auto-detection (enables KubeVirt, eBPF, GPU)
-curl -sfL https://get.openkubes.io | OKE_NATIVE=auto sh -s - server
+curl -sfL https://get.openkubes.ai | OKE_NATIVE=auto sh -s - server
 
 # Join a worker node
-curl -sfL https://get.openkubes.io | \
+curl -sfL https://get.openkubes.ai | \
   OKE_URL=https://<server-ip>:9345 \
   OKE_TOKEN=<token> \
   sh -s - agent
@@ -82,7 +82,7 @@ curl -sfL https://get.openkubes.io | \
 
 ```bash
 # Install OKE server
-curl -sfL https://get.openkubes.io | sh -s - server
+curl -sfL https://get.openkubes.ai | sh -s - server
 
 # Check status
 systemctl status oke-server
@@ -102,7 +102,7 @@ OKE is API-compatible with RKE2. Migration is a drop-in replacement:
 
 ```bash
 # Step 1: Install OKE on existing Ubuntu nodes
-curl -sfL https://get.openkubes.io | sh -s - server
+curl -sfL https://get.openkubes.ai | sh -s - server
 
 # Step 2: Verify workloads — fully API-compatible
 
