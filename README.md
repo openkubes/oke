@@ -1,72 +1,136 @@
-# RKE2
-![RKE2](https://docs.rke2.io/img/logo-horizontal-rke2.svg)
+# OKE — OpenKubes Kubernetes Engine
 
-RKE2, also known as RKE Government, is Rancher's next-generation Kubernetes distribution.
+<p align="center">
+  <img src="docs/assets/oke-logo.png" alt="OKE Logo" width="200" />
+</p>
 
-It is a fully [conformant Kubernetes distribution](https://landscape.cncf.io/?selected=rke-government) that focuses on security and compliance within the U.S. Federal Government sector.
+<p align="center">
+  <strong>A Kubernetes distribution that runs on any Linux — with ok-linux as the native, optimized platform.</strong>
+</p>
 
-To meet these goals, RKE2 does the following:
+<p align="center">
+  <a href="https://github.com/openkubes/oke/releases"><img src="https://img.shields.io/github/v/release/openkubes/oke?label=release" alt="Release"></a>
+  <a href="https://github.com/openkubes/oke/actions/workflows/build.yaml"><img src="https://github.com/openkubes/oke/actions/workflows/build.yaml/badge.svg" alt="Build"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/openkubes/oke" alt="License"></a>
+</p>
 
-- Provides [defaults and configuration options](https://docs.rke2.io/security/hardening_guide/) that allow clusters to pass the [CIS Kubernetes Benchmark](https://docs.rke2.io/security/cis_self_assessment123/) with minimal operator intervention
-- Enables [FIPS 140-2 compliance](https://docs.rke2.io/security/fips_support/)
-- Supports SELinux policy and [Multi-Category Security (MCS)](https://selinuxproject.org/page/NB_MLS) label enforcement
-- Regularly scans components for CVEs using [trivy](https://github.com/aquasecurity/trivy) in our build pipeline
+---
 
-For more information and detailed installation and operation instructions, [please visit our docs](https://docs.rke2.io/).
+> **OKE works everywhere. OKE + ok-linux works perfectly.**
 
-## Quick Start
-Here's the ***extremely*** quick start:
-```sh
-curl -sfL https://get.rke2.io | sh -
-systemctl enable rke2-server.service
-systemctl start rke2-server.service
-# Wait a bit
-export KUBECONFIG=/etc/rancher/rke2/rke2.yaml PATH=$PATH:/var/lib/rancher/rke2/bin
-kubectl get nodes
-```
-For a bit more, [check out our full quick start guide](https://docs.rke2.io/install/quickstart/).
+OKE is a lean, community-driven Kubernetes distribution based on a [RKE2](https://github.com/rancher/rke2) fork.
+It is its own product — not "RKE2 with extras". Like K3s never says "we are a Kubernetes fork" — OKE is just OKE.
 
-## Installation
-
-A full breakdown of installation methods and information can be found [here](https://docs.rke2.io/install/methods/).
-
-## Configuration File
-
-The primary way to configure RKE2 is through its [config file](https://docs.rke2.io/install/configuration#configuration-file). Command line arguments and environment variables are also available, but RKE2 is installed as a systemd service and thus these are not as easy to leverage.
-
-By default, RKE2 will launch with the values present in the YAML file located at `/etc/rancher/rke2/config.yaml`.
-
-An example of a basic `server` config file is below:
-
-```yaml
-# /etc/rancher/rke2/config.yaml
-write-kubeconfig-mode: "0644"
-tls-san:
-  - "foo.local"
-node-label:
-  - "foo=bar"
-  - "something=amazing"
-```
-
-In general, cli arguments map to their respective yaml key, with repeatable cli args being represented as yaml lists. So, an identical configuration using solely cli arguments is shown below to demonstrate this:
+## Install
 
 ```bash
-rke2 server \
-  --write-kubeconfig-mode "0644"    \
-  --tls-san "foo.local"             \
-  --node-label "foo=bar"            \
-  --node-label "something=amazing"
+# Any Linux (Ubuntu, Debian, RHEL, ...)
+curl -sfL https://get.openkubes.io | sh -s - server
+
+# With ok-linux auto-detection (enables KubeVirt, eBPF, GPU)
+curl -sfL https://get.openkubes.io | OKE_NATIVE=auto sh -s - server
+
+# Join a worker node
+curl -sfL https://get.openkubes.io | \
+  OKE_URL=https://<server-ip>:9345 \
+  OKE_TOKEN=<token> \
+  sh -s - agent
 ```
 
-It is also possible to use both a configuration file and cli arguments.  In these situations, values will be loaded from both sources, but cli arguments will take precedence.  For repeatable arguments such as `--node-label`, the cli arguments will overwrite all values in the list.
+## OS Support
 
-Finally, the location of the config file can be changed either through the cli argument `--config FILE, -c FILE`, or the environment variable `$RKE2_CONFIG_FILE`.
+| OS | Support | KubeVirt | GPU | Atomic Updates |
+|---|---|---|---|---|
+| **ok-linux** | ✅ Native | Pre-configured | First-class | A/B partition |
+| Ubuntu 22.04+ | ✅ Full | Manual | Manual | No |
+| Debian 12+ | ✅ Full | Manual | Manual | No |
+| RHEL / Rocky | 🤝 Community | Manual | Manual | No |
+| Any Linux | 🤝 Best-effort | Manual | Manual | No |
 
-## FAQ
+## What OKE changes vs RKE2
 
-- [How is this different from RKE1 or K3s?](https://docs.rke2.io/#how-is-this-different-from-rke-or-k3s)
-- [Why two names?](https://docs.rke2.io/#why-two-names)
+| Component | RKE2 | OKE |
+|---|---|---|
+| Default CNI | Canal | **Cilium** |
+| KubeVirt | Not included | Optional (pre-configured on ok-linux) |
+| GPU operator | Not included | Optional (pre-configured on ok-linux) |
+| Ingress | nginx | None (user choice) |
+| Update model | OS + K8s separately | **Atomic A/B** on ok-linux |
+| Config path | `/etc/rancher/rke2/` | `/etc/openkubes/oke/` |
 
-## Security
+## Architecture
 
-Security issues in RKE2 can be reported by sending an email to [security@rancher.com](mailto:security@rancher.com). Please do not open security issues here.
+```
+┌─────────────────────────────────────────────────────┐
+│                 OpenKubes Platform                   │
+│      Crossplane · CAPI · KubeVirt · MetalLB         │
+├─────────────────────────────────────────────────────┤
+│                      OKE                             │
+│          Kubernetes Distribution                     │
+│          (RKE2 fork + OpenKubes APIs)               │
+├───────────────────────┬─────────────────────────────┤
+│      ok-linux         │   Ubuntu / Debian / RHEL    │
+│  Native · Optimized   │   Fully supported           │
+│  First-class          │   Community support         │
+├───────────────────────┴─────────────────────────────┤
+│              Hardware / Cloud                        │
+│    Hetzner Bare Metal · AWS · Edge · Proxmox        │
+└─────────────────────────────────────────────────────┘
+```
+
+## Quick Start (Ubuntu 22.04)
+
+```bash
+# Install OKE server
+curl -sfL https://get.openkubes.io | sh -s - server
+
+# Check status
+systemctl status oke-server
+journalctl -u oke-server -f
+
+# Get node token (for joining workers)
+cat /var/lib/openkubes/oke/server/node-token
+
+# Use kubectl
+export KUBECONFIG=/etc/openkubes/oke/oke.yaml
+kubectl get nodes
+```
+
+## Migration from RKE2
+
+OKE is API-compatible with RKE2. Migration is a drop-in replacement:
+
+```bash
+# Step 1: Install OKE on existing Ubuntu nodes
+curl -sfL https://get.openkubes.io | sh -s - server
+
+# Step 2: Verify workloads — fully API-compatible
+
+# Step 3 (optional): Migrate to ok-linux one node at a time
+ok-boot hetzner --node <node> --image ok-linux:v1.0.0
+```
+
+## Related Projects
+
+| Project | Description |
+|---|---|
+| [ok-linux](https://github.com/openkubes/ok-linux) | Native OS for OKE — Ubuntu-based, immutable, KubeVirt-ready |
+| [ok-rke2](https://github.com/openkubes/ok-rke2) | Ansible role — production bridge until OKE is ready |
+| [ok-local](https://github.com/openkubes/ok-local) | Local dev environment (K3s + Multipass) |
+| [openkubes](https://github.com/openkubes/openkubes) | Platform layer (Crossplane, CAPI, KubeVirt) |
+
+## Documentation
+
+- [Architecture](docs/architecture.md)
+- [OS Support Model](docs/architecture.md#os-support-model)
+- [Migration Path](docs/architecture.md#migration-path)
+
+## License
+
+Apache 2.0 — see [LICENSE](LICENSE)
+
+---
+
+<p align="center">
+  Built with ❤️ by the <a href="https://github.com/openkubes">OpenKubes</a> community
+</p>
