@@ -62,17 +62,35 @@ jobs:
           KUBERNETES_VERSION="v1.35.5"
           VERSION_GOLANG="go$(curl -sL https://raw.githubusercontent.com/kubernetes/kubernetes/${KUBERNETES_VERSION}/.go-version | tr -d '[:space:]')"
 
+          # Image versions from scripts/version.sh
+          KUBERNETES_IMAGE_TAG="v1.35.5-rke2r2-build20260521"
+          ETCD_VERSION="v3.6.7-k3s1-build20260512"
+          PAUSE_VERSION="3.6"
+          CCM_VERSION="v1.35.4-0.20260415195656-e51c0636351d-build20260415"
+          KLIPPERHELM_VERSION="v0.10.0-build20260513"
+          KLIPPERLB_VERSION="v0.4.17"
+          K3S_PKG="github.com/k3s-io/k3s"
+          HELMCTR_PKG="github.com/k3s-io/helm-controller"
+          OKE_PKG="github.com/openkubes/oke"
+
           GOEXPERIMENT=boringcrypto go build \
             -tags "selinux netgo osusergo no_stage static_build sqlite_omit_load_extension exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" \
             -ldflags "-s -w \
               -extldflags \"-static\" \
-              -X github.com/k3s-io/k3s/pkg/version.Program=oke \
-              -X github.com/k3s-io/k3s/pkg/version.Version=${VERSION} \
-              -X github.com/k3s-io/k3s/pkg/version.GitCommit=${COMMIT} \
-              -X github.com/k3s-io/k3s/pkg/version.UpstreamGolang=${VERSION_GOLANG} \
-              -X github.com/openkubes/oke/pkg/version.Version=${VERSION} \
-              -X github.com/openkubes/oke/pkg/version.GitCommit=${COMMIT} \
-              -X github.com/openkubes/oke/pkg/version.BuildDate=${BUILD_DATE}" \
+              -X ${K3S_PKG}/pkg/version.Program=oke \
+              -X ${K3S_PKG}/pkg/version.Version=${VERSION} \
+              -X ${K3S_PKG}/pkg/version.GitCommit=${COMMIT} \
+              -X ${K3S_PKG}/pkg/version.UpstreamGolang=${VERSION_GOLANG} \
+              -X ${OKE_PKG}/pkg/version.Version=${VERSION} \
+              -X ${OKE_PKG}/pkg/version.GitCommit=${COMMIT} \
+              -X ${OKE_PKG}/pkg/version.BuildDate=${BUILD_DATE} \
+              -X ${OKE_PKG}/pkg/images.DefaultEtcdImage=rancher/hardened-etcd:${ETCD_VERSION} \
+              -X ${OKE_PKG}/pkg/images.DefaultKubernetesImage=rancher/hardened-kubernetes:${KUBERNETES_IMAGE_TAG} \
+              -X ${OKE_PKG}/pkg/images.DefaultPauseImage=rancher/mirrored-pause:${PAUSE_VERSION} \
+              -X ${OKE_PKG}/pkg/images.DefaultRuntimeImage=rancher/rke2-runtime:${VERSION} \
+              -X ${OKE_PKG}/pkg/images.DefaultCloudControllerManagerImage=rancher/rke2-cloud-provider:${CCM_VERSION} \
+              -X ${HELMCTR_PKG}/pkg/controllers/chart.DefaultJobImage=rancher/klipper-helm:${KLIPPERHELM_VERSION} \
+              -X ${K3S_PKG}/pkg/cloudprovider.DefaultLBImage=rancher/klipper-lb:${KLIPPERLB_VERSION}" \
             -o dist/oke-linux-${{ matrix.goarch }} \
             ./
 
