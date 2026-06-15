@@ -266,18 +266,37 @@ EOF
             sed -i "s|rancher/rke2-runtime:latest|rancher/rke2-runtime:${RUNTIME_TAG}|g" \
             "${IMAGES_DIR}/runtime-image.txt"
 
-        # Patch containerd config (pause image)
-        [ -f "${CONTAINERD_CONFIG}" ] && \
-            sed -i "s|rancher/mirrored-pause:latest|rancher/mirrored-pause:${PAUSE_TAG}|g" \
-            "${CONTAINERD_CONFIG}"
+        # Patch containerd config (pause image) — wait for file to be generated
+        info "Waiting for containerd config to be generated..."
+        CONTAINERD_WAIT=0
+        while [ $CONTAINERD_WAIT -lt 60 ]; do
+            if [ -f "${CONTAINERD_CONFIG}" ]; then
+                sed -i "s|rancher/mirrored-pause:latest|rancher/mirrored-pause:${PAUSE_TAG}|g" \
+                    "${CONTAINERD_CONFIG}"
+                info "  → containerd config patched"
+                break
+            fi
+            sleep 2
+            CONTAINERD_WAIT=$((CONTAINERD_WAIT + 2))
+        done
 
-        # Patch pod manifests
-        for f in "${MANIFESTS_DIR}"/*.yaml; do
-            [ -f "$f" ] || continue
-            sed -i \
-                -e "s|rancher/hardened-kubernetes:latest|rancher/hardened-kubernetes:${K8S_TAG}|g" \
-                -e "s|rancher/hardened-etcd:latest|rancher/hardened-etcd:${ETCD_TAG}|g" \
-                "$f"
+        # Patch pod manifests — wait for files to be generated
+        info "Waiting for pod manifests to be generated..."
+        MANIFEST_WAIT=0
+        while [ $MANIFEST_WAIT -lt 60 ]; do
+            if ls "${MANIFESTS_DIR}"/*.yaml > /dev/null 2>&1; then
+                for f in "${MANIFESTS_DIR}"/*.yaml; do
+                    [ -f "$f" ] || continue
+                    sed -i \
+                        -e "s|rancher/hardened-kubernetes:latest|rancher/hardened-kubernetes:${K8S_TAG}|g" \
+                        -e "s|rancher/hardened-etcd:latest|rancher/hardened-etcd:${ETCD_TAG}|g" \
+                        "$f"
+                done
+                info "  → pod manifests patched"
+                break
+            fi
+            sleep 2
+            MANIFEST_WAIT=$((MANIFEST_WAIT + 2))
         done
 
         info "  → Image tags patched"
