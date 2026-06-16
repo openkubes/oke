@@ -28,11 +28,11 @@ const (
 var (
 	DefaultRegistry                    = name.DefaultRegistry
 	PrimeRegistry                      = ""
-	DefaultEtcdImage                   = "rancher/hardened-etcd"
-	DefaultKubernetesImage             = "rancher/hardened-kubernetes"
-	DefaultPauseImage                  = "rancher/mirrored-pause"
-	DefaultRuntimeImage                = "rancher/rke2-runtime"
-	DefaultCloudControllerManagerImage = "rancher/rke2-cloud-provider"
+	DefaultEtcdImage                   = "rancher/hardened-etcd:v3.6.7-k3s1-build20260512"
+	DefaultKubernetesImage             = "rancher/hardened-kubernetes:v1.35.5-rke2r2-build20260521"
+	DefaultPauseImage                  = "rancher/mirrored-pause:3.6"
+	DefaultRuntimeImage                = "rancher/rke2-runtime:v1.35.5-rke2r2"
+	DefaultCloudControllerManagerImage = "rancher/rke2-cloud-provider:v1.35.4-0.20260415195656-e51c0636351d-build20260415"
 )
 
 // ResolverOpt is an option to modify image resolution behavior.
