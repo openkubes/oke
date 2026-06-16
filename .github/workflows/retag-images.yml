@@ -1,0 +1,128 @@
+name: Retag & Push OKE Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      oke_version:
+        description: 'OKE version tag (e.g. v1.35.5+oke2r1)'
+        required: true
+        default: 'v1.35.5+oke2r1'
+      kubernetes_version:
+        description: 'Upstream Kubernetes version (e.g. v1.35.5)'
+        required: true
+        default: 'v1.35.5'
+      rke2_suffix:
+        description: 'Upstream RKE2 suffix to pull from (e.g. rke2r2)'
+        required: true
+        default: 'rke2r2'
+      build_tag_kubernetes:
+        description: 'Build tag for hardened-kubernetes (e.g. build20260521)'
+        required: true
+        default: 'build20260521'
+      build_tag_etcd:
+        description: 'Build tag for hardened-etcd (e.g. build20260512)'
+        required: true
+        default: 'build20260512'
+      etcd_version:
+        description: 'etcd version (e.g. v3.6.7-k3s1)'
+        required: true
+        default: 'v3.6.7-k3s1'
+      ccm_version:
+        description: 'Cloud provider version (e.g. v1.35.4-0.20260415195656-e51c0636351d-build20260415)'
+        required: true
+        default: 'v1.35.4-0.20260415195656-e51c0636351d-build20260415'
+
+jobs:
+  retag:
+    name: Retag images (${{ github.event.inputs.oke_version }})
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: tags
+        run: |
+          OKE_VERSION="${{ github.event.inputs.oke_version }}"
+          # Replace + with - for Docker tag compatibility (matches DOCKERIZED_VERSION in version.sh)
+          OKE_TAG="${OKE_VERSION/+/-}"
+
+          K8S="${{ github.event.inputs.kubernetes_version }}"
+          RKE2="${{ github.event.inputs.rke2_suffix }}"
+          BUILD_K8S="${{ github.event.inputs.build_tag_kubernetes }}"
+          BUILD_ETCD="${{ github.event.inputs.build_tag_etcd }}"
+          ETCD="${{ github.event.inputs.etcd_version }}"
+          CCM="${{ github.event.inputs.ccm_version }}"
+
+          echo "oke_tag=${OKE_TAG}"                                                           >> $GITHUB_OUTPUT
+          echo "src_runtime=rancher/rke2-runtime:${K8S}-${RKE2}"                              >> $GITHUB_OUTPUT
+          echo "src_kubernetes=rancher/hardened-kubernetes:${K8S}-${RKE2}-${BUILD_K8S}"       >> $GITHUB_OUTPUT
+          echo "src_etcd=rancher/hardened-etcd:${ETCD}-${BUILD_ETCD}"                         >> $GITHUB_OUTPUT
+          echo "src_ccm=rancher/rke2-cloud-provider:${CCM}"                                   >> $GITHUB_OUTPUT
+          echo "src_pause=rancher/mirrored-pause:3.6"                                         >> $GITHUB_OUTPUT
+
+          echo "dst_runtime=ghcr.io/openkubes/oke-runtime:${OKE_TAG}"                        >> $GITHUB_OUTPUT
+          echo "dst_kubernetes=ghcr.io/openkubes/hardened-kubernetes:${OKE_TAG}"             >> $GITHUB_OUTPUT
+          echo "dst_etcd=ghcr.io/openkubes/hardened-etcd:${ETCD}"                            >> $GITHUB_OUTPUT
+          echo "dst_ccm=ghcr.io/openkubes/cloud-provider:${OKE_TAG}"                         >> $GITHUB_OUTPUT
+          echo "dst_pause=ghcr.io/openkubes/mirrored-pause:3.6"                              >> $GITHUB_OUTPUT
+
+      - name: Retag oke-runtime
+        run: |
+          docker pull ${{ steps.tags.outputs.src_runtime }}
+          docker tag  ${{ steps.tags.outputs.src_runtime }} ${{ steps.tags.outputs.dst_runtime }}
+          docker push ${{ steps.tags.outputs.dst_runtime }}
+          echo "✅ oke-runtime: ${{ steps.tags.outputs.dst_runtime }}"
+
+      - name: Retag hardened-kubernetes
+        run: |
+          docker pull ${{ steps.tags.outputs.src_kubernetes }}
+          docker tag  ${{ steps.tags.outputs.src_kubernetes }} ${{ steps.tags.outputs.dst_kubernetes }}
+          docker push ${{ steps.tags.outputs.dst_kubernetes }}
+          echo "✅ hardened-kubernetes: ${{ steps.tags.outputs.dst_kubernetes }}"
+
+      - name: Retag hardened-etcd
+        run: |
+          docker pull ${{ steps.tags.outputs.src_etcd }}
+          docker tag  ${{ steps.tags.outputs.src_etcd }} ${{ steps.tags.outputs.dst_etcd }}
+          docker push ${{ steps.tags.outputs.dst_etcd }}
+          echo "✅ hardened-etcd: ${{ steps.tags.outputs.dst_etcd }}"
+
+      - name: Retag cloud-provider
+        run: |
+          docker pull ${{ steps.tags.outputs.src_ccm }}
+          docker tag  ${{ steps.tags.outputs.src_ccm }} ${{ steps.tags.outputs.dst_ccm }}
+          docker push ${{ steps.tags.outputs.dst_ccm }}
+          echo "✅ cloud-provider: ${{ steps.tags.outputs.dst_ccm }}"
+
+      - name: Retag pause
+        run: |
+          docker pull ${{ steps.tags.outputs.src_pause }}
+          docker tag  ${{ steps.tags.outputs.src_pause }} ${{ steps.tags.outputs.dst_pause }}
+          docker push ${{ steps.tags.outputs.dst_pause }}
+          echo "✅ pause: ${{ steps.tags.outputs.dst_pause }}"
+
+      - name: Summary
+        run: |
+          echo "## OKE Image Retag Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**OKE Version:** \`${{ github.event.inputs.oke_version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Image | Tag |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-----|" >> $GITHUB_STEP_SUMMARY
+          echo "| oke-runtime | \`${{ steps.tags.outputs.dst_runtime }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| hardened-kubernetes | \`${{ steps.tags.outputs.dst_kubernetes }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| hardened-etcd | \`${{ steps.tags.outputs.dst_etcd }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| cloud-provider | \`${{ steps.tags.outputs.dst_ccm }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| pause | \`${{ steps.tags.outputs.dst_pause }}\` |" >> $GITHUB_STEP_SUMMARY
