@@ -168,11 +168,13 @@ func initStaticPodExecutor(clx *cli.Context, cfg rke2cli.Config, isServer bool) 
 	if len(cfg.IngressController.Value()) > 0 {
 		ingressControllerName = cfg.IngressController.Value()[0]
 	}
-	cniName := "cilium" // OKE default CNI
-	if len(cfg.CNI.Value()) > 0 && cfg.CNI.Value()[0] != "multus" {
-		cniName = cfg.CNI.Value()[0]
-	} else if len(cfg.CNI.Value()) > 1 {
-		cniName = cfg.CNI.Value()[1] // multus + primary CNI
+	// Determine selected CNI — default to cilium if not set
+	cniName := "cilium"
+	cniValues := cfg.CNI.Value()
+	if len(cniValues) == 1 && cniValues[0] != "multus" {
+		cniName = cniValues[0]
+	} else if len(cniValues) == 2 && cniValues[0] == "multus" {
+		cniName = cniValues[1]
 	}
 
 	disabledItems := map[string]bool{

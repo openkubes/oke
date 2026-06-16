@@ -289,6 +289,7 @@ func UpdateManifests(resolver *images.Resolver, ingressController string, cniNam
 
 	// Fix up HelmCharts to pass through configured values.
 	// This needs to be done every time in order to sync values from the CLI
+	logrus.Infof("OKE: removing non-selected CNI manifests, selected CNI: %q", cniName)
 	// Remove non-selected CNI manifests to prevent them from being deployed
 	cniManifests := map[string]string{
 		"canal":  "rke2-canal.yaml",
