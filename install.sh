@@ -157,6 +157,12 @@ main() {
     # Install binary
     info "Installing OKE binary to ${INSTALL_OKE_BIN_DIR}/oke ..."
     install -m 755 "$TMP_BIN" "${INSTALL_OKE_BIN_DIR}/oke"
+
+    # Create kubectl symlink
+    if [ ! -e "${INSTALL_OKE_BIN_DIR}/kubectl" ]; then
+        info "Creating kubectl symlink at ${INSTALL_OKE_BIN_DIR}/kubectl ..."
+        ln -sf "${INSTALL_OKE_BIN_DIR}/oke" "${INSTALL_OKE_BIN_DIR}/kubectl"
+    fi
     rm -f "$TMP_BIN"
 
     # Create directories
