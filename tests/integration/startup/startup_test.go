@@ -6,7 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	testutil "github.com/rancher/rke2/tests/integration"
+	testutil "github.com/openkubes/oke/tests/integration"
 	"github.com/sirupsen/logrus"
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 )

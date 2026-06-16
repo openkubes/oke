@@ -1,4 +1,4 @@
-module github.com/rancher/rke2
+module github.com/openkubes/oke
 
 go 1.25.9
 

@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/k3s-io/k3s/pkg/util/errors"
-	"github.com/rancher/rke2/pkg/rke2"
+	"github.com/openkubes/oke/pkg/rke2"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )

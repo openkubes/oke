@@ -6,8 +6,8 @@ import (
 
 	"github.com/k3s-io/k3s/pkg/cli/cmds"
 	"github.com/k3s-io/k3s/pkg/configfilearg"
-	rke2cli "github.com/rancher/rke2/pkg/cli"
-	"github.com/rancher/rke2/pkg/rke2"
+	rke2cli "github.com/openkubes/oke/pkg/cli"
+	"github.com/openkubes/oke/pkg/rke2"
 	"github.com/rancher/wrangler/v3/pkg/slice"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"

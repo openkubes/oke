@@ -6,8 +6,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rancher/rke2/tests"
-	"github.com/rancher/rke2/tests/docker"
+	"github.com/openkubes/oke/tests"
+	"github.com/openkubes/oke/tests/docker"
 )
 
 var (

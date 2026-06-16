@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/k3s-io/k3s/pkg/flock"
-	"github.com/rancher/rke2/tests"
+	"github.com/openkubes/oke/tests"
 	"github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"

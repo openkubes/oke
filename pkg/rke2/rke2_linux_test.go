@@ -8,9 +8,9 @@ import (
 	"reflect"
 	"testing"
 
-	rke2cli "github.com/rancher/rke2/pkg/cli"
-	"github.com/rancher/rke2/pkg/executor/staticpod"
-	"github.com/rancher/rke2/pkg/podtemplate"
+	rke2cli "github.com/openkubes/oke/pkg/cli"
+	"github.com/openkubes/oke/pkg/executor/staticpod"
+	"github.com/openkubes/oke/pkg/podtemplate"
 	"github.com/urfave/cli/v2"
 )
 

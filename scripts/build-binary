@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 set -ex
-
 cd $(dirname $0)/..
-
 source ./scripts/version.sh
 
 if [ -z "${GODEBUG}" ]; then
@@ -20,7 +18,6 @@ fi
 
 REVISION=$(git rev-parse HEAD)$(if ! git diff --no-ext-diff --quiet --exit-code; then echo .dirty; fi)
 RELEASE=${PROG}.${GOOS}-${GOARCH}
-
 BUILDTAGS="selinux netgo osusergo no_stage static_build sqlite_omit_load_extension no_embedded_executor no_cri_dockerd"
 GO_BUILDTAGS="${GO_BUILDTAGS} ${BUILDTAGS} ${DEBUG_TAGS}"
 
@@ -29,27 +26,31 @@ VERSION_FLAGS="
     -X ${K3S_PKG}/pkg/version.Program=${PROG}
     -X ${K3S_PKG}/pkg/version.Version=${VERSION}
     -X ${K3S_PKG}/pkg/version.UpstreamGolang=${VERSION_GOLANG}
+    -X ${OKE_PKG}/pkg/version.GitCommit=${REVISION}
+    -X ${OKE_PKG}/pkg/version.Program=${PROG}
+    -X ${OKE_PKG}/pkg/version.Version=${VERSION}
+    -X ${OKE_PKG}/pkg/version.BuildDate=${BUILD_DATE}
+    -X ${OKE_PKG}/pkg/version.UpstreamGolang=${VERSION_GOLANG}
     -X ${K3S_PKG}/pkg/cloudprovider.DefaultLBImage=rancher/klipper-lb:${KLIPPERLB_VERSION}
     -X ${HELMCTR_PKG}/pkg/controllers/chart.DefaultJobImage=rancher/klipper-helm:${KLIPPERHELM_VERSION}
-    -X ${RKE2_PKG}/pkg/images.DefaultRegistry=${REGISTRY}
-    -X ${RKE2_PKG}/pkg/images.PrimeRegistry=${PRIME_REGISTRY}
-    -X ${RKE2_PKG}/pkg/images.DefaultEtcdImage=rancher/hardened-etcd:${ETCD_VERSION}-build20260512
-    -X ${RKE2_PKG}/pkg/images.DefaultKubernetesImage=rancher/hardened-kubernetes:${KUBERNETES_IMAGE_TAG}
-    -X ${RKE2_PKG}/pkg/images.DefaultPauseImage=rancher/mirrored-pause:${PAUSE_VERSION}
-    -X ${RKE2_PKG}/pkg/images.DefaultRuntimeImage=${REPO}/${PROG}-runtime:${DOCKERIZED_VERSION}
-    -X ${RKE2_PKG}/pkg/images.DefaultCloudControllerManagerImage=rancher/rke2-cloud-provider:${CCM_VERSION}
+    -X ${OKE_PKG}/pkg/images.DefaultRegistry=${REGISTRY}
+    -X ${OKE_PKG}/pkg/images.PrimeRegistry=${PRIME_REGISTRY}
+    -X ${OKE_PKG}/pkg/images.DefaultEtcdImage=rancher/hardened-etcd:${ETCD_VERSION}-build20260512
+    -X ${OKE_PKG}/pkg/images.DefaultKubernetesImage=rancher/hardened-kubernetes:${KUBERNETES_IMAGE_TAG}
+    -X ${OKE_PKG}/pkg/images.DefaultPauseImage=rancher/mirrored-pause:${PAUSE_VERSION}
+    -X ${OKE_PKG}/pkg/images.DefaultRuntimeImage=${REPO}/${PROG}-runtime:${DOCKERIZED_VERSION}
+    -X ${OKE_PKG}/pkg/images.DefaultCloudControllerManagerImage=rancher/rke2-cloud-provider:${CCM_VERSION}
 "
 
-#STATIC_FLAGS='-extldflags "-static -Wl,--fatal-warnings"'
 ### ON GLIBC SYSTEMS YOU WILL SEE LINKER WARNINGS #####################################################################
-# github.com/rancher/rke2
+# github.com/openkubes/oke
 #/usr/bin/ld: /tmp/go-link-743463534/000027.o: in function `nvmlInit_dl':
 #/home/jacob/go/pkg/mod/github.com/mindprince/gonvml@v0.0.0-20190828220739-9ebdce4bb989/bindings.go:152: warning: Using 'dlopen' in statically linked applications requires at runtime the shared libraries from the glibc version used for linking
 ### THESE CAN BE SAFELY IGNORED UNLESS YOU ARE TRYING TO LEVERAGE NVIDIA METRICS FROM CADVISOR AND YOU HAPPEN TO BE ###
 ### RUNNING RKE2 ON A SYSTEM OTHER THAN THE ONE WHICH IS WAS BUILT THAT ALSO HAS AN INCOMPATIBLE GLIBC ################
 STATIC_FLAGS='-extldflags "-static"'
-
 GO_LDFLAGS="${STATIC_FLAGS} ${EXTRA_LDFLAGS}"
+
 echo ${DEBUG_GO_GCFLAGS}
 
 # passing boringcrypto to GOEXPERIMENT variable to build with goboring library
@@ -61,13 +62,12 @@ GOEXPERIMENT=boringcrypto go build \
     -ldflags "${GO_LDFLAGS} ${VERSION_FLAGS}" \
     ${GO_TAGS}
 
-# assert that rke2 is fully statically linked
+# assert that oke is fully statically linked
 if type -a go-assert-static.sh >/dev/null 2>&1; then
     go-assert-static.sh bin/${PROG}
 fi
-
 if [ "${GOARCH}" = "amd64" ]; then
-    # assert that rke2 is linked to goboring
+    # assert that oke is linked to goboring
     if type -a go-assert-boring.sh >/dev/null 2>&1; then
         go-assert-boring.sh bin/${PROG}
     fi

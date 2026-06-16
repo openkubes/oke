@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	rke2cli "github.com/rancher/rke2/pkg/cli"
-	"github.com/rancher/rke2/pkg/images"
+	rke2cli "github.com/openkubes/oke/pkg/cli"
+	"github.com/openkubes/oke/pkg/images"
 	"github.com/urfave/cli/v2"
 )
 

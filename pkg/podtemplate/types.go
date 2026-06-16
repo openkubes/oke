@@ -2,7 +2,7 @@ package podtemplate
 
 import (
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/rancher/rke2/pkg/images"
+	"github.com/openkubes/oke/pkg/images"
 	v1 "k8s.io/api/core/v1"
 )
 

@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/k3s-io/k3s/pkg/version"
-	rke2cli "github.com/rancher/rke2/pkg/cli"
-	"github.com/rancher/rke2/pkg/images"
-	"github.com/rancher/rke2/pkg/podtemplate"
+	rke2cli "github.com/openkubes/oke/pkg/cli"
+	"github.com/openkubes/oke/pkg/images"
+	"github.com/openkubes/oke/pkg/podtemplate"
 	"github.com/urfave/cli/v2"
 )
 

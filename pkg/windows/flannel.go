@@ -18,7 +18,7 @@ import (
 	daemonconfig "github.com/k3s-io/k3s/pkg/daemons/config"
 	"github.com/k3s-io/k3s/pkg/util/errors"
 	"github.com/k3s-io/k3s/pkg/version"
-	"github.com/rancher/rke2/pkg/logging"
+	"github.com/openkubes/oke/pkg/logging"
 	"github.com/sirupsen/logrus"
 	authv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

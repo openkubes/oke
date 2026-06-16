@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/k3s-io/k3s/pkg/configfilearg"
-	"github.com/rancher/rke2/pkg/cli/cmds"
+	"github.com/openkubes/oke/pkg/cli/cmds"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )

@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"github.com/rancher/rke2/pkg/images"
+	"github.com/openkubes/oke/pkg/images"
 	urfave "github.com/urfave/cli/v2"
 )
 

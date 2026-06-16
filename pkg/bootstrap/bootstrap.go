@@ -24,7 +24,7 @@ import (
 	"github.com/k3s-io/k3s/pkg/util"
 	"github.com/k3s-io/k3s/pkg/util/errors"
 	"github.com/k3s-io/k3s/pkg/version"
-	"github.com/rancher/rke2/pkg/images"
+	"github.com/openkubes/oke/pkg/images"
 	"github.com/rancher/wharfie/pkg/credentialprovider/plugin"
 	"github.com/rancher/wharfie/pkg/extract"
 	"github.com/rancher/wharfie/pkg/registries"

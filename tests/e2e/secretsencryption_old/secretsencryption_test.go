@@ -9,7 +9,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/rancher/rke2/tests/e2e"
+	"github.com/openkubes/oke/tests/e2e"
 )
 
 // Valid nodeOS: bento/ubuntu-24.04, opensuse/Leap-15.6.x86_64

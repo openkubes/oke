@@ -6,7 +6,7 @@ import (
 	"github.com/k3s-io/k3s/pkg/cli/cert"
 	"github.com/k3s-io/k3s/pkg/cli/cmds"
 	"github.com/k3s-io/k3s/pkg/configfilearg"
-	"github.com/rancher/rke2/pkg/rke2"
+	"github.com/openkubes/oke/pkg/rke2"
 	"github.com/urfave/cli/v2"
 )
 
