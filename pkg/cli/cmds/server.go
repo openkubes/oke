@@ -211,7 +211,7 @@ func validateCNI(clx *cli.Context) {
 	disableExceptSelected(clx, rke2cli.CNIItems, CNIFlag, func(values []string) ([]string, error) {
 		switch len(values) {
 		case 0:
-			values = append(values, "canal")
+			values = append(values, "cilium")
 			fallthrough
 		case 1:
 			if values[0] == "multus" {
