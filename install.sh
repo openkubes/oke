@@ -106,6 +106,9 @@ main() {
 
     ARCH=$(detect_arch)
     OS=$(detect_os)
+    if [ "$OS" = "darwin" ]; then
+        fatal "OKE runs on Linux only. On macOS, use Multipass:\n  multipass launch --name oke-local --cpus 4 --memory 8G 24.04\n  multipass shell oke-local"
+    fi
 
     info "OKE Install Script"
     info "  Role:   $ROLE"
@@ -169,6 +172,7 @@ main() {
 runtime-image: rancher/rke2-runtime:v1.35.5-rke2r2
 data-dir: /var/lib/rancher/rke2
 pause-image: rancher/mirrored-pause:3.6
+cni: cilium
 EOF
         if [ "$ROLE" = "agent" ]; then
             [ -n "${OKE_URL:-}" ] && echo "server: ${OKE_URL}" >> "$CONFIG_FILE"
