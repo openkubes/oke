@@ -87,7 +87,7 @@ jobs:
               -X ${OKE_PKG}/pkg/images.DefaultEtcdImage=rancher/hardened-etcd:${ETCD_VERSION} \
               -X ${OKE_PKG}/pkg/images.DefaultKubernetesImage=rancher/hardened-kubernetes:${KUBERNETES_IMAGE_TAG} \
               -X ${OKE_PKG}/pkg/images.DefaultPauseImage=rancher/mirrored-pause:${PAUSE_VERSION} \
-              -X ${OKE_PKG}/pkg/images.DefaultRuntimeImage=rancher/rke2-runtime:${VERSION} \
+              -X ${OKE_PKG}/pkg/images.DefaultRuntimeImage=rancher/rke2-runtime:v1.35.5-rke2r2 \
               -X ${OKE_PKG}/pkg/images.DefaultCloudControllerManagerImage=rancher/rke2-cloud-provider:${CCM_VERSION} \
               -X ${HELMCTR_PKG}/pkg/controllers/chart.DefaultJobImage=rancher/klipper-helm:${KLIPPERHELM_VERSION} \
               -X ${K3S_PKG}/pkg/cloudprovider.DefaultLBImage=rancher/klipper-lb:${KLIPPERLB_VERSION}" \
