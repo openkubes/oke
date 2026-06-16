@@ -448,7 +448,7 @@ func (p *PEBinaryConfig) stageData(ctx context.Context, nodeConfig *config.Node,
 		return err
 	}
 	if p.IsServer {
-		return bootstrap.UpdateManifests(p.Resolver, p.IngressController, nodeConfig, cfg, p.Prime)
+		return bootstrap.UpdateManifests(p.Resolver, p.IngressController, p.CNIName, nodeConfig, cfg, p.Prime)
 	}
 	return nil
 }

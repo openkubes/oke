@@ -54,6 +54,7 @@ type StaticPodConfig struct {
 	RuntimeEndpoint   string
 	ManifestsDir      string
 	IngressController string
+	CNIName           string
 	AuditPolicyFile   string
 	PSAConfigFile     string
 	KubeletPath       string
@@ -654,7 +655,7 @@ func (s *StaticPodConfig) stageData(ctx context.Context, nodeConfig *daemonconfi
 		return err
 	}
 	if s.IsServer {
-		return bootstrap.UpdateManifests(s.Resolver, s.IngressController, nodeConfig, cfg, s.Prime)
+		return bootstrap.UpdateManifests(s.Resolver, s.IngressController, s.CNIName, nodeConfig, cfg, s.Prime)
 	}
 	return nil
 }

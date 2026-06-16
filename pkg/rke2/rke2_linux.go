@@ -168,6 +168,12 @@ func initStaticPodExecutor(clx *cli.Context, cfg rke2cli.Config, isServer bool) 
 	if len(cfg.IngressController.Value()) > 0 {
 		ingressControllerName = cfg.IngressController.Value()[0]
 	}
+	cniName := "cilium" // OKE default CNI
+	if len(cfg.CNI.Value()) > 0 && cfg.CNI.Value()[0] != "multus" {
+		cniName = cfg.CNI.Value()[0]
+	} else if len(cfg.CNI.Value()) > 1 {
+		cniName = cfg.CNI.Value()[1] // multus + primary CNI
+	}
 
 	disabledItems := map[string]bool{
 		"cloud-controller-manager": !isServer || forceRestart || clx.Bool("disable-cloud-controller"),
@@ -195,6 +201,7 @@ func initStaticPodExecutor(clx *cli.Context, cfg rke2cli.Config, isServer bool) 
 		IsServer:          isServer,
 		Prime:             clx.Bool("prime"),
 		IngressController: ingressControllerName,
+		CNIName:           cniName,
 	}, nil
 }
 

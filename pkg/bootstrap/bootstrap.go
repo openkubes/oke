@@ -262,7 +262,7 @@ func Stage(ctx context.Context, resolver *images.Resolver, nodeConfig *daemoncon
 
 // UpdateManifests copies the staged manifests into the server's manifests dir, and applies
 // cluster configuration values to any HelmChart manifests found in the manifests directory.
-func UpdateManifests(resolver *images.Resolver, ingressController string, nodeConfig *daemonconfig.Node, cfg cmds.Agent, prime bool) error {
+func UpdateManifests(resolver *images.Resolver, ingressController string, cniName string, nodeConfig *daemonconfig.Node, cfg cmds.Agent, prime bool) error {
 	ref, err := resolver.GetReference(images.Runtime)
 	if err != nil {
 		return err
@@ -289,6 +289,18 @@ func UpdateManifests(resolver *images.Resolver, ingressController string, nodeCo
 
 	// Fix up HelmCharts to pass through configured values.
 	// This needs to be done every time in order to sync values from the CLI
+	// Remove non-selected CNI manifests to prevent them from being deployed
+	cniManifests := map[string]string{
+		"canal":  "rke2-canal.yaml",
+		"cilium": "rke2-cilium.yaml",
+		"calico": "rke2-calico.yaml",
+		"flannel": "rke2-flannel.yaml",
+	}
+	for cni, manifest := range cniManifests {
+		if cni != cniName {
+			_ = os.Remove(filepath.Join(manifestsDir, manifest))
+		}
+	}
 	if err := setChartValues(manifestsDir, ingressController, nodeConfig, cfg, prime); err != nil {
 		return errors.WithMessage(err, "failed to rewrite HelmChart manifests to pass through CLI values")
 	}
